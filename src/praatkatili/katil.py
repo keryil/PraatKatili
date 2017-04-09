@@ -8,6 +8,7 @@ from qtconsole.inprocess import QtInProcessKernelManager
 # from IPython.lib import guisupport
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from PyQt5.QtWidgets import QDockWidget
+import os
 
 
 
@@ -22,6 +23,11 @@ class Katil(QtWidgets.QWidget):
         self.console.font_size = 10
         self.plots = []
         self.setup_ipython()
+
+        self.file_model = QtWidgets.QFileSystemModel()
+        self.treeview = self.find_children(QtWidgets.QTreeView)
+
+        self.setup_browser()
 
     def find_docks(self, name=None):
         return self.find_children(QDockWidget, name)
@@ -60,6 +66,12 @@ class Katil(QtWidgets.QWidget):
         self.console.show()
         self.inject_globals()
         self.inject_debugs()
+
+    def setup_browser(self):
+        print(QtCore.QDir.currentPath())
+        self.file_model.setRootPath(QtCore.QDir.currentPath())
+        self.treeview.setModel(self.file_model)
+        # self.file_model.setRootPath(os.getcwd())
 
     def push_vars(self, variableDict):
         """
