@@ -20,7 +20,6 @@ class PlotCanvas(FigureCanvas):
 
     def plot(self):
         data = [random.random() for i in range(25)]
-        ax = self.figure.add_subplot(111)
-        ax.plot(data, 'r-')
-        ax.set_title('PyQt Matplotlib Example')
+        self.axes.plot(data, 'r-')
+        self.axes.set_title('PyQt Matplotlib Example')
         self.draw()

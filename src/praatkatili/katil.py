@@ -1,5 +1,5 @@
 from PyQt5 import QtGui, QtCore, QtWidgets, uic
-# from praatkatili.canvas import PlotCanvas
+from praatkatili.canvas import PlotCanvas
 import sys
 # from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 # from matplotlib.figure import Figure
@@ -35,11 +35,13 @@ class Katil(QtWidgets.QWidget):
         :param title: 
         :return: 
         """
-        assert isinstance(type, QtWidgets.QWidget)
+        # print(type, name)
+        # assert isinstance(type, QtWidgets.QWidget)
         ret = self.window.findChildren(type, name)
-        if len(ret) == 1:
+        try:
             return ret[0]
-        return ret
+        except IndexError:
+            return ret
 
     def setup_ipython(self):
         self.console.kernel_manager = kernel_manager = QtInProcessKernelManager()
@@ -57,6 +59,7 @@ class Katil(QtWidgets.QWidget):
         self.push_vars({"KatilInstance": self})
         self.console.show()
         self.inject_globals()
+        self.inject_debugs()
 
     def push_vars(self, variableDict):
         """
@@ -92,8 +95,10 @@ class Katil(QtWidgets.QWidget):
         :return: 
         """
         self.push_vars({"_injected":globals()})
-        self.execute_command("import PyQt5.QtWidgets import *")
+        self.execute_command("from PyQt5.QtWidgets import *")
 
+    def inject_debugs(self):
+        self.push_vars({'canvas': self.find_children(PlotCanvas)})
 
 if __name__ == "__main__":
     qapp = QtWidgets.QApplication(sys.argv)
