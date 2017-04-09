@@ -9,6 +9,7 @@ from qtconsole.inprocess import QtInProcessKernelManager
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 from PyQt5.QtWidgets import QDockWidget
 import os
+import resource
 
 
 
@@ -71,7 +72,7 @@ class Katil(QtWidgets.QWidget):
         print(QtCore.QDir.currentPath())
         self.file_model.setRootPath(QtCore.QDir.currentPath())
         self.treeview.setModel(self.file_model)
-        # self.file_model.setRootPath(os.getcwd())
+        self.treeview.setRootIndex(self.file_model.index(os.getcwd()))
 
     def push_vars(self, variableDict):
         """
