@@ -23,3 +23,12 @@ class PlotCanvas(FigureCanvas):
         self.axes.plot(data, 'r-')
         self.axes.set_title('PyQt Matplotlib Example')
         self.draw()
+
+    def set_dock(self, dock):
+        self.dock = dock
+
+    def set_title(self, title):
+        self.axes.set_title(title)
+        self.draw()
+        t = self.dock.windowTitle().split("(")[-1]
+        self.dock.setWindowTitle("{} ({}".format(title, t))
