@@ -25,6 +25,9 @@ class Resource(object):
 
 
 class FileResource(Resource):
+    """
+    Generic text file, parent class to all other file resources. 
+    """
     def __init__(self, path, *args, alias=None, writable=True, **kwargs):
         super(FileResource, self).__init__(alias, *args, **kwargs)
         if not os.path.exists(path):
@@ -43,6 +46,9 @@ class CSVFile(FileResource):
 
 
 class WAVFile(FileResource):
+    """
+    Audio file in wave format.  
+    """
     def __init__(self, path, *args, **kwargs):
         super(WAVFile, self).__init__(path, *args, **kwargs)
         self.sample_rate = -1
