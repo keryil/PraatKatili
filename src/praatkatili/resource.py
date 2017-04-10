@@ -9,6 +9,7 @@ class Resource(object):
     other data objects such as pandas frames.
     """
     def __init__(self, alias, *args, **kwargs):
+        super(Resource, self).__init__(*args, **kwargs)
         self.alias = alias
 
     def open(self):

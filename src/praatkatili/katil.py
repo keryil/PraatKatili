@@ -19,6 +19,7 @@ class Katil(QtWidgets.QWidget):
     def __init__(self):
         super(Katil, self).__init__()
         self.window = uic.loadUi(main_ui)
+        self.window.setCentralWidget(None)
         self.window.show()
         self.console = self.window.findChild(RichJupyterWidget, "console")
         self.console.font_size = 10
