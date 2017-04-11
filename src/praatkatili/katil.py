@@ -3,7 +3,7 @@ import sys
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QDockWidget
+from PyQt5.QtWidgets import QDockWidget, QAbstractItemView
 from PyQt5.QtGui import QStandardItemModel
 # from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 # from matplotlib.figure import Figure
@@ -33,9 +33,11 @@ class Katil(QtWidgets.QMainWindow):
         self.show()
 
     def setup_main_window(self):
-        # self.setLayout(QtWidgets.QFormLayout())
-        self.setDockOptions(QtWidgets.QMainWindow.AllowNestedDocks | \
-                            QtWidgets.QMainWindow.AllowTabbedDocks)
+        # self.setLayout(QtWidgets.QGridLayout())
+        self.setDockOptions((QtWidgets.QMainWindow.AllowNestedDocks |
+                            QtWidgets.QMainWindow.AllowTabbedDocks |
+                            QtWidgets.QMainWindow.AnimatedDocks) &
+                            ~QtWidgets.QMainWindow.ForceTabbedDocks)
         # w = QtWidgets.QWidget(self)
         # w.setVisible(False)
         # self.setCentralWidget(w)
@@ -49,17 +51,17 @@ class Katil(QtWidgets.QMainWindow):
         self.add_plot()
 
     def setup_console(self):
-        self.consoleDock = QDockWidget(objectName="consoleDock")
-        self.consoleDock.setMinimumHeight(80)
-        self.consoleDock.setMinimumWidth(500)
-        self.consoleDock.setWindowTitle("IPython Shell")
-        self.consoleDock.setFeatures(self.dock_features)
+        self.consoleDock = dock = QDockWidget(objectName="consoleDock")
+        dock.setMinimumHeight(80)
+        dock.setMinimumWidth(500)
+        dock.setWindowTitle("IPython Shell")
+        dock.setFeatures(self.dock_features)
         # self.consoleDock.setLayout(QtWidgets.QHBoxLayout())
-        self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.consoleDock)
-        self.consoleDock.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
+        self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, dock)
+        dock.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
         self.console = RichJupyterWidget(name="console")
         self.console.font_size = 7
-        self.consoleDock.setWidget(self.console)
+        dock.setWidget(self.console)
         self.setup_ipython()
 
     def find_docks(self, name=None):
@@ -84,22 +86,26 @@ class Katil(QtWidgets.QMainWindow):
         self.inject_debugs()
 
     def setup_browser(self):
-        self.browserDock = QDockWidget(objectName="browserDock")
-        self.browserDock.setMinimumWidth(300)
-        self.browserDock.setMinimumHeight(125)
-        self.browserDock.setFeatures(self.dock_features)
-        self.browserDock.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
-        self.browserDock.setWindowTitle("File Browser")
-        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.browserDock)
+        self.browserDock = dock = QDockWidget(objectName="browserDock")
+        dock.setMinimumWidth(300)
+        dock.setMinimumHeight(125)
+        dock.setFeatures(self.dock_features)
+        dock.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
+        dock.setWindowTitle("File Browser")
+        self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
 
-        self.file_view = QtWidgets.QTreeView()
+        self.file_view = view = QtWidgets.QTreeView()
+        dock.setWidget(self.file_view)
+
         self.file_model.setRootPath(QtCore.QDir.homePath())
-        self.file_view.setModel(self.file_model)
-        self.file_view.setRootIndex(self.file_model.index(QtCore.QDir.homePath()))
-        self.file_view.setCurrentIndex(
-                self.file_model.index("/Users/Kerem/Dropbox"))
-        self.browserDock.setWidget(self.file_view)
-        self.file_view.doubleClicked.connect(self.open_file)
+        view.setModel(self.file_model)
+        view.setRootIndex(self.file_model.index(QtCore.QDir.homePath()))
+        r = self.file_model.index("/Users/Kerem/Dropbox/MarcosLemurData")
+        view.setAutoScroll(True)
+        view.setCurrentIndex(r)
+        view.scrollTo(r)
+        view.setAutoExpandDelay(0)
+        view.doubleClicked.connect(self.open_file)
 
     def open_file(self, index):
         row = index.row()
@@ -135,11 +141,26 @@ class Katil(QtWidgets.QMainWindow):
         dock = QDockWidget(objectName="plot{}".format(self.plot_counter))
         dock.setFeatures(self.dock_features)
         dock.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
-        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
+        # dock.setLayout(QtWidgets.QFormLayout())
         dock.tab_group = tab_group
+        self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
 
-        canvas = PlotCanvas()
-        dock.setWidget(canvas)
+        expand = QtWidgets.QSizePolicy.Expanding
+        maximum = QtWidgets.QSizePolicy.Maximum
+        sc = QtWidgets.QScrollArea()
+        sc.setLayout(QtWidgets.QFormLayout())
+        sc.setSizePolicy(expand, expand)
+        dock.setWidget(sc)
+
+        f = QtWidgets.QWidget()
+        # f.setMinimumHeight(50)
+        f.setLayout(QtWidgets.QFormLayout())
+        f.setSizePolicy(maximum, maximum)
+        canvas = PlotCanvas(f)
+        canvas.setSizePolicy(maximum, maximum)
+        sc.setWidget(f)
+        f.setGeometry(canvas.geometry())
+        sc.setGeometry(f.geometry())
         dock.setWindowTitle("{} (plot{:>2})".format(canvas.axes.get_title(),
                                                     self.plot_counter))
         if tab_group is not None:
@@ -154,6 +175,12 @@ class Katil(QtWidgets.QMainWindow):
         canvas.dock = dock
         self.plots.append(dock)
         self.plot_counter += 1
+
+        vscroll = QtWidgets.QSlider(QtCore.Qt.Vertical, f)
+        vscroll.setOrientation(QtCore.Qt.Vertical)
+        vscroll.setSizePolicy(expand, expand)
+        hscroll = QtWidgets.QSlider(QtCore.Qt.Horizontal, f)
+        hscroll.setSizePolicy(expand, expand)
         return tab_group
 
     def push_vars(self, variableDict):
