@@ -100,12 +100,17 @@ class Katil(QtWidgets.QMainWindow):
         self.file_model.setRootPath(QtCore.QDir.homePath())
         view.setModel(self.file_model)
         view.setRootIndex(self.file_model.index(QtCore.QDir.homePath()))
-        r = self.file_model.index("/Users/Kerem/Dropbox/MarcosLemurData")
+
         view.setAutoScroll(True)
-        view.setCurrentIndex(r)
-        view.scrollTo(r)
+        view.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         view.setAutoExpandDelay(0)
         view.doubleClicked.connect(self.open_file)
+
+    def showEvent(self, QShowEvent):
+        r = self.file_model.index("/Users/Kerem/Dropbox/MarcosLemurData")
+        self.file_view.setCurrentIndex(r)
+        self.file_view.scrollTo(r)
+        self.file_view.scrollTo(r)
 
     def open_file(self, index):
         row = index.row()
@@ -148,12 +153,12 @@ class Katil(QtWidgets.QMainWindow):
         expand = QtWidgets.QSizePolicy.Expanding
         maximum = QtWidgets.QSizePolicy.Maximum
         sc = QtWidgets.QScrollArea()
+        sc.setAlignment(QtCore.Qt.AlignCenter)
         sc.setLayout(QtWidgets.QFormLayout())
         sc.setSizePolicy(expand, expand)
         dock.setWidget(sc)
 
         f = QtWidgets.QWidget()
-        # f.setMinimumHeight(50)
         f.setLayout(QtWidgets.QFormLayout())
         f.setSizePolicy(maximum, maximum)
         canvas = PlotCanvas(f)
@@ -175,12 +180,16 @@ class Katil(QtWidgets.QMainWindow):
         canvas.dock = dock
         self.plots.append(dock)
         self.plot_counter += 1
+        g = canvas.geometry()
 
-        vscroll = QtWidgets.QSlider(QtCore.Qt.Vertical, f)
-        vscroll.setOrientation(QtCore.Qt.Vertical)
-        vscroll.setSizePolicy(expand, expand)
-        hscroll = QtWidgets.QSlider(QtCore.Qt.Horizontal, f)
-        hscroll.setSizePolicy(expand, expand)
+        f.vscroll = QtWidgets.QSlider(QtCore.Qt.Vertical, f)
+        f.vscroll.setSizePolicy(expand, expand)
+        f.vscroll.setGeometry(9, 46, 22, g.height())
+
+        f.hscroll = QtWidgets.QSlider(QtCore.Qt.Horizontal, f)
+        f.hscroll.setSizePolicy(expand, expand)
+        f.hscroll.setGeometry(36, 5, g.width(), 22)
+
         return tab_group
 
     def push_vars(self, variableDict):
