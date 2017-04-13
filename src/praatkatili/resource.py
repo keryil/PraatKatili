@@ -9,12 +9,13 @@ class Resource(object):
     Abstract parent class of all resources such as data from CSV, WAV and such files, as well as 
     other data objects such as pandas frames.
     """
+
     def __init__(self, alias, *args, **kwargs):
         super(Resource, self).__init__(*args, **kwargs)
         self.alias = alias
 
     def __str__(self):
-        return self.__class__.__name__
+        return "{}({})".format(self.__class__.__name__, self.alias)
 
     def open(self):
         raise NotImplementedError()
@@ -33,6 +34,7 @@ class FileResource(Resource):
     """
     Generic text file, parent class to all other file resources. 
     """
+
     def __init__(self, path, *args, alias=None, writable=True, **kwargs):
         super(FileResource, self).__init__(alias, *args, **kwargs)
         if not os.path.exists(path):
@@ -51,14 +53,17 @@ class FileResource(Resource):
 
 class CSVFile(FileResource):
     file_masks = ("*.csv")
+
     def __init__(self, *args, **kwargs):
         super(CSVFile, self).__init__(*args, **kwargs)
+
 
 class WAVFile(FileResource):
     """
     Audio file in wave format.  
     """
     file_masks = ("*.wav", "*.wave")
+
     def __init__(self, path, *args, **kwargs):
         super(WAVFile, self).__init__(path, *args, **kwargs)
         self.sample_rate = -1
@@ -67,8 +72,10 @@ class WAVFile(FileResource):
         self.sample_rate, self.data = audioBasicIO.readAudioFile(self.path)
         return self.data
 
+
 class UnknownResourceTypeError(Exception):
     pass
+
 
 FileTypes = {}
 for type in (WAVFile, CSVFile):
