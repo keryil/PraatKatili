@@ -107,7 +107,7 @@ class Katil(QtWidgets.QMainWindow):
         view.doubleClicked.connect(self.open_file)
 
     def showEvent(self, QShowEvent):
-        r = self.file_model.index("/Users/Kerem/Dropbox/MarcosLemurData")
+        r = self.file_model.index(os.path.expanduser("~/Dropbox/MarcosLemurData"))
         self.file_view.setCurrentIndex(r)
         self.file_view.scrollTo(r)
         self.file_view.scrollTo(r)
