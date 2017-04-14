@@ -3,16 +3,23 @@ import os
 from pyAudioAnalysis import audioBasicIO
 from PyQt5.Qt import QStandardItem
 
+# holds all open resource instances
+# {resource_class_name: [instance1, instance2, ...]}
+OpenResources = dict()
 
 class Resource(object):
     """
     Abstract parent class of all resources such as data from CSV, WAV and such files, as well as 
     other data objects such as pandas frames.
     """
-
     def __init__(self, alias, *args, **kwargs):
         super(Resource, self).__init__(*args, **kwargs)
         self.alias = alias
+        cname = self.__class__.__name__
+        if cname not in OpenResources:
+            OpenResources[cname] = set()
+        OpenResources[cname].add(self)
+
 
     def __str__(self):
         return "{}({})".format(self.__class__.__name__, self.alias)
@@ -29,12 +36,15 @@ class Resource(object):
     def plot(self):
         raise NotImplementedError()
 
+    def __del__(self):
+        OpenResources.remove(self)
+
 
 class FileResource(Resource):
     """
     Generic text file, parent class to all other file resources. 
     """
-
+    file_masks = []
     def __init__(self, path, *args, alias=None, writable=True, **kwargs):
         super(FileResource, self).__init__(alias, *args, **kwargs)
         if not os.path.exists(path):
@@ -42,7 +52,6 @@ class FileResource(Resource):
         self.path = path
         self.writable = writable
         self.data = None
-        # self.file_masks = []
 
     def __str__(self):
         return "{} ({})".format(super(FileResource, self).__str__(), self.path)
@@ -52,7 +61,7 @@ class FileResource(Resource):
 
 
 class CSVFile(FileResource):
-    file_masks = ("*.csv")
+    file_masks = ("*.csv",)
 
     def __init__(self, *args, **kwargs):
         super(CSVFile, self).__init__(*args, **kwargs)
@@ -76,6 +85,9 @@ class WAVFile(FileResource):
 class UnknownResourceTypeError(Exception):
     pass
 
+
+class DuplicateFileResourceError(Exception):
+    pass
 
 FileTypes = {}
 for type in (WAVFile, CSVFile):

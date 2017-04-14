@@ -1,13 +1,13 @@
 import sys
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDockWidget, QAbstractItemView
+from PyQt5.QtWidgets import QDockWidget, QMessageBox
 from qtconsole.inprocess import QtInProcessKernelManager
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
 from praatkatili.canvas import PlotCanvas
 from praatkatili.config import *
-from praatkatili.dock import PlotDock, ResourceDock
+from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock
 from praatkatili.resource import *
 
 
@@ -20,6 +20,7 @@ class Katil(QtWidgets.QMainWindow):
         self.resources = []
         #
         self.file_model = QtWidgets.QFileSystemModel()
+        self.resourceDock = self.browserDock = self.consoleDock = None
 
         self.setup_main_window()
         self.setup_widgets()
@@ -45,88 +46,28 @@ class Katil(QtWidgets.QMainWindow):
         Sets up the dock containing IPython shell.
         :return: 
         """
-        self.consoleDock = dock = QDockWidget(objectName="consoleDock")
-        dock.setMinimumHeight(80)
-        dock.setMinimumWidth(500)
-        dock.setWindowTitle("IPython Shell")
-        dock.setFeatures(DOCK_FEATURES)
-        # self.consoleDock.setLayout(QtWidgets.QHBoxLayout())
+        self.consoleDock = dock = IPythonDock()
+        dock.setup_ipython(self)
         self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, dock)
-        dock.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
-        self.console = RichJupyterWidget(name="console")
-        self.console.font_size = 7
-        dock.setWidget(self.console)
-        self.setup_ipython()
+        self.console = dock.console
+        dock.inject_globals(globals())
 
     def find_docks(self, name=None):
         return self.findChildren(QDockWidget, name)
-
-    def setup_ipython(self):
-        """
-        Sets up the ipython shell for the relevant docks. 
-        :return: 
-        """
-        self.console.kernel_manager = kernel_manager = QtInProcessKernelManager()
-        kernel_manager.start_kernel(show_banner=True)
-        kernel_manager.kernel.gui = 'qt'
-        self.console.kernel_client = kernel_client = kernel_manager.client()
-        kernel_client.start_channels()
-
-        def stop():
-            kernel_client.stop_channels()
-            kernel_manager.shutdown_kernel()
-            # guisupport.get_app_qt().exit()
-
-        self.console.exit_requested.connect(stop)
-        self.push_vars({"KatilInstance": self})
-        self.console.show()
-        self.inject_globals()
-        self.inject_debugs()
 
     def setup_browser(self):
         """
         Sets up the resource browser.
         :return: 
         """
-        self.browserDock = dock = QDockWidget(objectName="browserDock")
-        dock.setMinimumWidth(300)
-        dock.setMinimumHeight(125)
-        dock.setFeatures(DOCK_FEATURES)
-        dock.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
-        dock.setWindowTitle("File Browser")
+        self.browserDock = dock = FileBrowserDock(objectName="browserDock", file_model=self.file_model)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, dock)
-
-        self.file_view = view = QtWidgets.QTreeView()
+        self.file_view, _ = dock.view_and_model()
         dock.setWidget(self.file_view)
 
         self.file_model.setRootPath(QtCore.QDir.homePath())
-        view.setModel(self.file_model)
-        view.setRootIndex(self.file_model.index(QtCore.QDir.homePath()))
+        self.file_view.doubleClicked.connect(self.open_file)
 
-        view.setAutoScroll(True)
-        view.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
-        view.setAutoExpandDelay(0)
-        view.doubleClicked.connect(self.open_file)
-        from PyQt5.QtCore import QTimer
-        self.t = t = QTimer()
-        t.singleShot(500, self.show_home)
-
-    # def data_changed(self, topl, bottomr, roles):
-    #     print(topl.data())
-    #     print(self.resource_model.data(topl))
-    #     # print(str(bottomr))
-    #     # print(str(roles))
-
-    def show_folder(self, folder=os.path.expanduser("~/Dropbox/MarcosLemurData")):
-        """
-        Expands and shows a folder in the resource browser. 
-        :param folder: 
-        :return: 
-        """
-        r = self.file_model.index(folder)
-        self.file_view.setExpanded(r, True)
-        self.file_view.setCurrentIndex(r)
-        self.file_view.scrollTo(r, QAbstractItemView.PositionAtTop)
 
     def open_file(self, index):
         """
@@ -138,27 +79,28 @@ class Katil(QtWidgets.QMainWindow):
         try:
             ftype = FileTypes["*" + os.path.splitext(path)[1]]
             resource = ftype(path, alias=os.path.split(path)[-1])
+
+            def check_dup(item):
+                try:
+                    return item.path == path
+                except AttributeError:
+                    return False
+
+            if any(map(check_dup, self.resources)):
+                raise DuplicateFileResourceError()
+
             resource.open()
-            r, r2, r3, r4 = QStandardItem(), QStandardItem(), QStandardItem(), QStandardItem()
-            # r.setData(resource.alias)
-            r.setText(resource.alias)
-            # def change_alias(*args):
-            #     print(args)
-            # r.dataChanged.connect(change_alias)
-            r2.setText(resource.__class__.__name__)
-            r2.setEditable(False)
-            try:
-                r3.setText(resource.path)
-            except AttributeError:
-                r3.setText("N/A")
-            r3.setEditable(False)
-            r4.setText(str(resource.data))
-            r4.setEditable(False)
-            [r.setData(resource) for r in (r, r2, r3, r4)]
-            # r.setText(str(resource))
-            self.resource_model.appendRow([r, r2, r3, r4])
+            self.resources.append(resource)
+            self.resourceDock.add_resource(resource)
         except KeyError:
-            raise UnknownResourceTypeError(path)
+            ext = os.path.splitext(path)[1]
+            QMessageBox.critical(self,
+                                 "Unknown type: {}".format(ext),
+                                 "Unknown type {} at path: \n{}".format(ext, path))
+        except DuplicateFileResourceError:
+            QMessageBox.critical(self,
+                                 "Duplicate resource error",
+                                 "A resource with this path already exists: \n{}".format(path))
 
     def setup_resources(self):
         """
@@ -189,48 +131,15 @@ class Katil(QtWidgets.QMainWindow):
             except TypeError:
                 self.tab_groups.append(0)
             dock.tab_group = max(self.tab_groups)
+
+        def print_hello(*args):
+            print("Hello", args)
+
+        dock.xshift_changed.connect(print_hello)
         self.plots.append(dock)
         self.plot_counter += 1
         return tab_group
 
-    def push_vars(self, variableDict):
-        """
-        Given a dictionary containing name / value pairs, push those variables
-        to the Jupyter console widget
-        """
-        self.console.kernel_manager.kernel.shell.push(variableDict)
-
-    def clear(self):
-        """
-        Clears the terminal
-        """
-        self.console._control.clear()
-
-        # self.kernel_manager
-
-    def print_text(self, text):
-        """
-        Prints some plain text to the console
-        """
-        self.console._append_plain_text(text)
-
-    def execute_command(self, command):
-        """
-        Execute a command in the frame of the console widget
-        """
-        self.console._execute(command, False)
-
-    def inject_globals(self):
-        """
-        Inject the globals() dict into the IPython kernel
-        under the key '_injected'
-        :return:
-        """
-        self.push_vars({"_injected": globals()})
-        self.execute_command("from PyQt5.QtWidgets import *")
-
-    def inject_debugs(self):
-        self.push_vars({'canvas': self.findChildren(PlotCanvas)})
 
 
 if __name__ == "__main__":
