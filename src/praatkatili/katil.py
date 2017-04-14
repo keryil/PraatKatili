@@ -2,10 +2,7 @@ import sys
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDockWidget, QMessageBox
-from qtconsole.inprocess import QtInProcessKernelManager
-from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
-from praatkatili.canvas import PlotCanvas
 from praatkatili.config import *
 from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock
 from praatkatili.resource import *
@@ -18,7 +15,7 @@ class Katil(QtWidgets.QMainWindow):
         self.plot_counter = 1
         self.tab_groups = []
         self.resources = []
-        #
+
         self.file_model = QtWidgets.QFileSystemModel()
         self.resourceDock = self.browserDock = self.consoleDock = None
 

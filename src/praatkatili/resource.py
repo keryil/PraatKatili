@@ -1,7 +1,6 @@
 import os
 
 from pyAudioAnalysis import audioBasicIO
-from PyQt5.Qt import QStandardItem
 
 # holds all open resource instances
 # {resource_class_name: [instance1, instance2, ...]}

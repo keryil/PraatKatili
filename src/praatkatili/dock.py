@@ -1,12 +1,13 @@
+import os
+
+from PyQt5 import QtCore
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QDockWidget, QAbstractItemView
-from PyQt5 import QtCore
 from qtconsole.inprocess import QtInProcessKernelManager
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
-from praatkatili.config import *
 from praatkatili.canvas import PlotCanvas
-import os
+from praatkatili.config import *
 
 
 class Dock(QDockWidget):
@@ -183,7 +184,7 @@ class PlotDock(Dock):
         g = canvas.geometry()
 
         f.slider_zoom_y = QtWidgets.QSlider(QtCore.Qt.Vertical, f)
-        geo = QtCore.QRect(2, 46, 22, g.height())
+        geo = QtCore.QRect(2, 46, 22, g.height() - 50)
         self.setup_slider(f.slider_zoom_y, geo, self.yzoom_changed)
 
         f.slider_shift_y = QtWidgets.QSlider(QtCore.Qt.Vertical, f)
@@ -191,7 +192,7 @@ class PlotDock(Dock):
         self.setup_slider(f.slider_shift_y, geo, self.yshift_changed)
 
         f.slider_zoom_x = QtWidgets.QSlider(QtCore.Qt.Horizontal, f)
-        geo = QtCore.QRect(36, 1, g.width(), 22)
+        geo = QtCore.QRect(36, 1, g.width() - 50, 22)
         self.setup_slider(f.slider_zoom_x, geo, self.xzoom_changed)
 
         f.slider_shift_x = QtWidgets.QSlider(QtCore.Qt.Horizontal, f)
