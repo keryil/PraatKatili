@@ -45,6 +45,10 @@ class Katil(QtWidgets.QMainWindow):
         # self.setCentralWidget(w)
 
     def setup_widgets(self):
+        """
+        Initializes the UI.
+        :return: 
+        """
         self.setup_console()
         self.setup_browser()
         self.setup_resources()
@@ -53,6 +57,10 @@ class Katil(QtWidgets.QMainWindow):
         self.add_plot()
 
     def setup_console(self):
+        """
+        Sets up the dock containing IPython shell.
+        :return: 
+        """
         self.consoleDock = dock = QDockWidget(objectName="consoleDock")
         dock.setMinimumHeight(80)
         dock.setMinimumWidth(500)
@@ -70,6 +78,10 @@ class Katil(QtWidgets.QMainWindow):
         return self.findChildren(QDockWidget, name)
 
     def setup_ipython(self):
+        """
+        Sets up the ipython shell for the relevant docks. 
+        :return: 
+        """
         self.console.kernel_manager = kernel_manager = QtInProcessKernelManager()
         kernel_manager.start_kernel(show_banner=True)
         kernel_manager.kernel.gui = 'qt'
@@ -88,6 +100,10 @@ class Katil(QtWidgets.QMainWindow):
         self.inject_debugs()
 
     def setup_browser(self):
+        """
+        Sets up the resource browser.
+        :return: 
+        """
         self.browserDock = dock = QDockWidget(objectName="browserDock")
         dock.setMinimumWidth(300)
         dock.setMinimumHeight(125)
@@ -109,7 +125,7 @@ class Katil(QtWidgets.QMainWindow):
         view.doubleClicked.connect(self.open_file)
         from PyQt5.QtCore import QTimer
         self.t = t = QTimer()
-        t.singleShot(500, self.showHome)
+        t.singleShot(500, self.show_home)
 
     # def data_changed(self, topl, bottomr, roles):
     #     print(topl.data())
@@ -117,15 +133,23 @@ class Katil(QtWidgets.QMainWindow):
     #     # print(str(bottomr))
     #     # print(str(roles))
 
-    def showHome(self):
-        p = os.path.expanduser("~/Dropbox/MarcosLemurData")
-        print(p)
-        r = self.file_model.index(p)
+    def show_folder(self, folder=os.path.expanduser("~/Dropbox/MarcosLemurData")):
+        """
+        Expands and shows a folder in the resource browser. 
+        :param folder: 
+        :return: 
+        """
+        r = self.file_model.index(folder)
         self.file_view.setExpanded(r, True)
         self.file_view.setCurrentIndex(r)
         self.file_view.scrollTo(r, QAbstractItemView.PositionAtTop)
 
     def open_file(self, index):
+        """
+        Opens the supported file types, as described by the classes in praatkiller.resource module. 
+        :param index: 
+        :return: 
+        """
         path = self.file_model.filePath(index)
         try:
             ftype = FileTypes["*" + os.path.splitext(path)[1]]
@@ -153,13 +177,21 @@ class Katil(QtWidgets.QMainWindow):
             raise UnknownResourceTypeError(path)
 
     def setup_resources(self):
+        """
+        Sets up the resource dock. 
+        :return: 
+        """
         self.resourceDock = ResourceDock(objectName="resourceDock")
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.resourceDock)
         self.resource_view, self.resource_model = self.resourceDock.view_and_model()
         self.resourceDock.setWidget(self.resource_view)
 
     def add_plot(self, tab_group=None):
-        # dock window
+        """
+        Adds a new plot dock, optionally belonging to a tab group.
+        :param tab_group: 
+        :return: 
+        """
         dock = PlotDock(objectName="plot{}".format(self.plot_counter),
                         main_window=self,
                         tab_group=tab_group)
