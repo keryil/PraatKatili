@@ -1,23 +1,14 @@
-import os
 import sys
 
 from PyQt5 import QtCore
-from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDockWidget, QAbstractItemView
-from PyQt5.QtGui import QStandardItemModel
-# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-# from matplotlib.figure import Figure
-# import matplotlib.pyplot as plt
 from qtconsole.inprocess import QtInProcessKernelManager
-# from IPython.lib import guisupport
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
 from praatkatili.canvas import PlotCanvas
+from praatkatili.config import *
 from praatkatili.dock import PlotDock, ResourceDock
 from praatkatili.resource import *
-from praatkatili.config import *
-
-main_ui = "res/mainwindow.ui"
 
 
 class Katil(QtWidgets.QMainWindow):
@@ -35,14 +26,7 @@ class Katil(QtWidgets.QMainWindow):
         self.show()
 
     def setup_main_window(self):
-        # self.setLayout(QtWidgets.QGridLayout())
-        self.setDockOptions((QtWidgets.QMainWindow.AllowNestedDocks |
-                             QtWidgets.QMainWindow.AllowTabbedDocks |
-                             QtWidgets.QMainWindow.AnimatedDocks) &
-                            ~QtWidgets.QMainWindow.ForceTabbedDocks)
-        # w = QtWidgets.QWidget(self)
-        # w.setVisible(False)
-        # self.setCentralWidget(w)
+        self.setDockOptions(DOCK_OPTIONS)
 
     def setup_widgets(self):
         """
