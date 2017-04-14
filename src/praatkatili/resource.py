@@ -1,5 +1,7 @@
 import os
 
+from PyQt5.QtWidgets import QMenu
+
 from pyAudioAnalysis import audioBasicIO
 
 # holds all open resource instances
@@ -37,6 +39,12 @@ class Resource(object):
 
     def __del__(self):
         OpenResources.remove(self)
+
+    def create_context_menu(self, parent):
+        menu = QMenu(parent)
+        plot_menu = menu.addMenu("Plot")
+        plot_menu.addActions(parent.parent().plot_actions)
+        return menu
 
 
 class FileResource(Resource):

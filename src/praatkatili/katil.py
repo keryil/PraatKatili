@@ -1,7 +1,7 @@
 import sys
 
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QDockWidget, QMessageBox
+from PyQt5.QtWidgets import QDockWidget, QMessageBox, QAction
 
 from praatkatili.config import *
 from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock
@@ -15,13 +15,33 @@ class Katil(QtWidgets.QMainWindow):
         self.plot_counter = 1
         self.tab_groups = []
         self.resources = []
-
+        #
         self.file_model = QtWidgets.QFileSystemModel()
         self.resourceDock = self.browserDock = self.consoleDock = None
 
         self.setup_main_window()
         self.setup_widgets()
         self.show()
+
+        # plot actions
+        line = QAction("Line plot", self)
+        scatter = QAction("Scatter plot", self)
+        line.triggered.connect(self.add_line_plot)
+        self.plot_actions = [line, scatter]
+
+        # resource actions
+        add_file = QAction("Add file as resource", self)
+        remove_resource = QAction("Remove resource", self)
+        self.resource_actions = [add_file, remove_resource]
+
+        self.addActions(self.plot_actions + self.resource_actions)
+
+    def add_line_plot(self):
+        selected = self.resource_view.currentIndex()
+        self.add_plot()
+        dock = self.plots[-1]
+        res = self.resource_model.itemFromIndex(selected).data()
+        dock.canvas.plot_line(res.data, res.alias)
 
     def setup_main_window(self):
         self.setDockOptions(DOCK_OPTIONS)
@@ -132,7 +152,10 @@ class Katil(QtWidgets.QMainWindow):
         def print_hello(*args):
             print("Hello", args)
 
-        dock.xshift_changed.connect(print_hello)
+        dock.xshift_changed.connect(dock.canvas.set_xshift)
+        dock.yshift_changed.connect(dock.canvas.set_yshift)
+        dock.xzoom_changed.connect(dock.canvas.set_xzoom)
+        dock.yzoom_changed.connect(dock.canvas.set_yzoom)
         self.plots.append(dock)
         self.plot_counter += 1
         return tab_group

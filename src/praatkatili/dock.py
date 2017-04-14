@@ -2,7 +2,7 @@ import os
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QDockWidget, QAbstractItemView
+from PyQt5.QtWidgets import QDockWidget, QAbstractItemView, QLabel
 from qtconsole.inprocess import QtInProcessKernelManager
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
@@ -58,7 +58,7 @@ class FileBrowserDock(Dock):
 class IPythonDock(Dock):
     def __init__(self, *args, **kwargs):
         super(IPythonDock, self).__init__(*args, **kwargs)
-        self.setMinimumHeight(80)
+        self.setMinimumHeight(25)
         self.setMinimumWidth(500)
         self.setWindowTitle("IPython Shell")
         self.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
@@ -141,22 +141,28 @@ class PlotDock(Dock):
         self.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
         self.tab_group = tab_group
 
+        self.pan_step_size = 10
+
         expand = QtWidgets.QSizePolicy.Expanding
 
         # scroll area in dock window
         sc = QtWidgets.QScrollArea()
         sc.setAlignment(QtCore.Qt.AlignCenter)
-        sc.setLayout(QtWidgets.QFormLayout())
+        sc.setLayout(QtWidgets.QHBoxLayout())
         sc.setSizePolicy(expand, expand)
         self.setWidget(sc)
 
         # frame within scroll area
         self.frame = f = QtWidgets.QWidget()
-        f.setLayout(QtWidgets.QFormLayout())
+        layout = QtWidgets.QGridLayout()
+        layout.setSpacing(10)
+        # layout.setContentsMargins(50,50,50,50)
+        f.setLayout(layout)
         f.setSizePolicy(expand, expand)
 
         # canvas on frame
-        self.canvas = canvas = PlotCanvas(f)
+        self.canvas = canvas = PlotCanvas()
+        f.layout().addWidget(canvas, 2, 2, 1, 3)
         canvas.setSizePolicy(expand, expand)
         sc.setWidget(f)
         f.setGeometry(canvas.geometry())
@@ -171,33 +177,50 @@ class PlotDock(Dock):
         expand = QtWidgets.QSizePolicy.Expanding
         slider.setSizePolicy(expand, expand)
         slider.setGeometry(geometry)
-        slider.setValue(50)
+        slider.setValue(0)
+        slider.setMinimum(-250)
+        slider.setMaximum(250)
 
-        # connect slider release to a separate signal to avoid
+        # optional: connect slider release to a separate signal to avoid
         # redrawing plots for intermittent values
-        slider.sliderReleased.connect(
+        slider.valueChanged.connect(
             lambda: signal.emit(slider.value()))
 
     def setup_sliders(self):
         canvas = self.canvas
         f = self.frame
         g = canvas.geometry()
+        l = f.layout()
 
         f.slider_zoom_y = QtWidgets.QSlider(QtCore.Qt.Vertical, f)
         geo = QtCore.QRect(2, 46, 22, g.height() - 50)
         self.setup_slider(f.slider_zoom_y, geo, self.yzoom_changed)
+        l.addWidget(QLabel("Zoom"), 0, 0, 1, 1)
+        l.addWidget(f.slider_zoom_y, 1, 0, 3, 1)
 
         f.slider_shift_y = QtWidgets.QSlider(QtCore.Qt.Vertical, f)
-        geo.setLeft(15)
+        # geo.setLeft(15)
         self.setup_slider(f.slider_shift_y, geo, self.yshift_changed)
+        l.addWidget(QLabel("Pan"), 0, 1, 1, 1)
+        l.addWidget(f.slider_shift_y, 1, 1, 3, 1)
 
         f.slider_zoom_x = QtWidgets.QSlider(QtCore.Qt.Horizontal, f)
         geo = QtCore.QRect(36, 1, g.width() - 50, 22)
         self.setup_slider(f.slider_zoom_x, geo, self.xzoom_changed)
+        l.addWidget(QLabel("Zoom"), 0, 2, 1, 1)
+        l.addWidget(f.slider_zoom_x, 0, 3,
+                    1, 2)
 
         f.slider_shift_x = QtWidgets.QSlider(QtCore.Qt.Horizontal, f)
-        geo.setTop(15)
+        # geo.setTop(15)
         self.setup_slider(f.slider_shift_x, geo, self.xshift_changed)
+        l.addWidget(QLabel("Pan"), 1, 2, 1, 1)
+        l.addWidget(f.slider_shift_x, 1, 3,
+                    1, 2)
+
+        l.setColumnMinimumWidth(2, 22)
+        l.setSpacing(5)
+
 
 class ResourceDock(Dock):
     def __init__(self, *args, **kwargs):
@@ -207,15 +230,32 @@ class ResourceDock(Dock):
         self.setFeatures(DOCK_FEATURES)
         self.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
         self.setWindowTitle("Resources")
+        print(self.contextMenuPolicy())
 
         self.resource_view = resource_view = QtWidgets.QTreeView()
         self.resource_model = resource_model = QStandardItemModel()
         resource_model.setColumnCount(4)
         resource_model.setHorizontalHeaderLabels(["Alias",
-                                                       "Type",
-                                                       "Path",
-                                                       "Value"])
+                                                  "Type",
+                                                  "Path",
+                                                  "Value"])
         resource_view.setModel(resource_model)
+        resource_view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        resource_view.customContextMenuRequested.connect(self.context_menu)
+
+        # actions
+
+    # def setup_actions(self):
+    #     self.plot_line = QAc
+
+    def context_menu(self, point):
+        # find the selected resource
+        selected = self.resource_view.currentIndex()
+        item = self.resource_model.itemFromIndex(selected)
+        if item is None:
+            return
+        menu = item.data().create_context_menu(self)
+        menu.exec_(self.mapToGlobal(point))
 
     def view_and_model(self):
         return self.resource_view, self.resource_model
