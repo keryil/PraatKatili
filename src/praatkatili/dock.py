@@ -177,7 +177,7 @@ class PlotDock(Dock):
         expand = QtWidgets.QSizePolicy.Expanding
         slider.setSizePolicy(expand, expand)
         slider.setGeometry(geometry)
-        slider.setValue(0)
+        slider.setValue(-240)
         slider.setMinimum(-250)
         slider.setMaximum(250)
 
