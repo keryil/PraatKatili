@@ -89,35 +89,3 @@ class PlotCanvas(FigureCanvas):
         self.axes.set_xlim(*new_xlim)
         self.axes.set_ylim(*new_ylim)
         super(PlotCanvas, self).draw()
-
-    # def move_horizontally(self, n=1):
-    #     self.axes.set_xlim(*(self.xlim+self.xdelta * n))
-    #     # self.recenter()
-    #     self.draw()
-    #
-    # def move_vertically(self, n=1):
-    #     self.axes.set_ylim(*(self.ylim() + self.ydelta * n))
-    #     # self.recenter()
-    #     self.draw()
-
-    def zoom_horizontally(self, n=1):
-        x1, x2 = self.axes.get_xlim()
-        # n = n ** 2
-        # if n > 0:
-        #     self.axes.set_xlim(x1 + self.xdelta * n, x2 - self.xdelta * n)
-        # else:
-        new_lims = x1 - self.xdelta * n, x2 + self.xdelta * n
-        self.axes.set_xlim(new_lims + self.centre[0])
-        # self.scaled_xlim = self.axes.get_xlim()
-        self.draw()
-
-    def zoom_vertically(self, n=1):
-        y1, y2 = self.axes.get_ylim()
-        # n = n ** 2
-        # if n > 0:
-        #     self.axes.set_ylim(y1 + self.ydelta * n, y2 - self.ydelta * n)
-        # else
-        new_lims = y1 - self.ydelta * n, y2 + self.ydelta * n
-        self.axes.set_ylim(new_lims + self.centre[1])
-        # self.scaled_ylim = self.axes.get_ylim()
-        self.draw()
