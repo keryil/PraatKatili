@@ -28,6 +28,7 @@ class Katil(QtWidgets.QMainWindow):
         line = QAction("Line plot", self)
         scatter = QAction("Scatter plot", self)
         line.triggered.connect(self.add_line_plot)
+        scatter.triggered.connect(self.add_scatter_plot)
         self.plot_actions = [line, scatter]
 
         # resource actions
@@ -58,6 +59,14 @@ class Katil(QtWidgets.QMainWindow):
                 counter += 1
             print("Restored {} file resources.".format(counter))
 
+            # plots = settings.value("Katil/plots")
+            # if plots:
+            #     counter = 0
+            #     for p in plots:
+            #         self._add_plot(p)
+            #         counter += 1
+            #     print("Restored {} plots.".format(counter))
+
     def closeEvent(self, event):
         settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
                              "KeremEryilmaz", "PraatKatili");
@@ -66,15 +75,29 @@ class Katil(QtWidgets.QMainWindow):
 
         # serialize file resources
         settings.setValue("Katil/resources", self.resources)
+        # settings.setValue("Katuk/plots", self.plots)
 
         super(Katil, self).closeEvent(event);
 
     def add_line_plot(self):
         selected = self.resource_view.currentIndex()
-        self.add_plot()
+        self.add_plot(True)
         dock = self.plots[-1]
+        dock.canvas.clear()
         res = self.resource_model.itemFromIndex(selected).data()
         dock.canvas.plot_line(res.data, res.alias)
+        dock.canvas.axes.autoscale()
+        dock.canvas.recenter()
+
+    def add_scatter_plot(self):
+        selected = self.resource_view.currentIndex()
+        self.add_plot(True)
+        dock = self.plots[-1]
+        dock.canvas.clear()
+        res = self.resource_model.itemFromIndex(selected).data()
+        dock.canvas.plot_scatter(res.data, res.alias)
+        dock.canvas.axes.autoscale()
+        dock.canvas.recenter()
 
     def setup_main_window(self):
         self.setDockOptions(DOCK_OPTIONS)
@@ -173,7 +196,7 @@ class Katil(QtWidgets.QMainWindow):
         self.resource_view, self.resource_model = self.resourceDock.view_and_model()
         self.resourceDock.setWidget(self.resource_view)
 
-    def add_plot(self, tab_group=None):
+    def add_plot(self, tab_group=None, blank=False):
         """
         Adds a new plot dock, optionally belonging to a tab group.
         :param tab_group: 
@@ -181,7 +204,20 @@ class Katil(QtWidgets.QMainWindow):
         """
         dock = PlotDock(objectName="plot{}".format(self.plot_counter),
                         main_window=self,
-                        tab_group=tab_group)
+                        tab_group=tab_group,
+                        blank=blank)
+
+        dock.xshift_changed.connect(dock.canvas.set_xshift)
+        dock.yshift_changed.connect(dock.canvas.set_yshift)
+        dock.xzoom_changed.connect(dock.canvas.set_xzoom)
+        dock.yzoom_changed.connect(dock.canvas.set_yzoom)
+        dock.frame.slider_zoom_y.setValue(150)
+        dock.frame.slider_zoom_x.setValue(150)
+        dock.frame.slider_shift_y.setValue(0)
+        dock.frame.slider_shift_x.setValue(0)
+        self._add_plot(dock, tab_group)
+
+    def _add_plot(self, dock, tab_group):
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
         if tab_group is not None:
             for p in filter(lambda x: x.tab_group == tab_group, self.plots):
@@ -193,16 +229,8 @@ class Katil(QtWidgets.QMainWindow):
                 self.tab_groups.append(0)
             dock.tab_group = max(self.tab_groups)
 
-        def print_hello(*args):
-            print("Hello", args)
-
-        dock.xshift_changed.connect(dock.canvas.set_xshift)
-        dock.yshift_changed.connect(dock.canvas.set_yshift)
-        dock.xzoom_changed.connect(dock.canvas.set_xzoom)
-        dock.yzoom_changed.connect(dock.canvas.set_yzoom)
         self.plots.append(dock)
         self.plot_counter += 1
-        return tab_group
 
 
 

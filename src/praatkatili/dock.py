@@ -136,7 +136,7 @@ class PlotDock(Dock):
     xshift_changed = QtCore.pyqtSignal(int, name="XShiftChanged")
     yshift_changed = QtCore.pyqtSignal(int, name="YShiftChanged")
 
-    def __init__(self, main_window, tab_group, *args, **kwargs):
+    def __init__(self, main_window, tab_group, blank, *args, **kwargs):
         super(PlotDock, self).__init__(*args, **kwargs)
         self.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
         self.tab_group = tab_group
@@ -161,7 +161,7 @@ class PlotDock(Dock):
         f.setSizePolicy(expand, expand)
 
         # canvas on frame
-        self.canvas = canvas = PlotCanvas()
+        self.canvas = canvas = PlotCanvas(blank=blank)
         f.layout().addWidget(canvas, 2, 2, 1, 3)
         canvas.setSizePolicy(expand, expand)
         sc.setWidget(f)
@@ -177,7 +177,7 @@ class PlotDock(Dock):
         expand = QtWidgets.QSizePolicy.Expanding
         slider.setSizePolicy(expand, expand)
         slider.setGeometry(geometry)
-        slider.setValue(-240)
+        slider.setValue(0)
         slider.setMinimum(-250)
         slider.setMaximum(250)
 
