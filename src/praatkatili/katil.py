@@ -1,6 +1,7 @@
 import sys
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QDockWidget, QMessageBox, QAction
 
 from praatkatili.config import *
@@ -36,6 +37,38 @@ class Katil(QtWidgets.QMainWindow):
 
         self.addActions(self.plot_actions + self.resource_actions)
 
+        settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
+                             "KeremEryilmaz", "PraatKatili");
+        # settings.setValue("windowState", self.saveState());
+        try:
+            geo = settings.value("Katil/geometry")
+            state = settings.value("Katil/windowState")
+        except AttributeError:
+            pass
+        if geo is not None:
+            self.restoreGeometry(geo)
+            self.restoreState(state)
+            print("Restored window state.")
+        ress = settings.value("Katil/resources")
+        if ress:
+            counter = 0
+            for res in ress:
+                res.open()
+                self._add_resource(res)
+                counter += 1
+            print("Restored {} file resources.".format(counter))
+
+    def closeEvent(self, event):
+        settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
+                             "KeremEryilmaz", "PraatKatili");
+        settings.setValue("Katil/geometry", self.saveGeometry());
+        settings.setValue("Katil/windowState", self.saveState());
+
+        # serialize file resources
+        settings.setValue("Katil/resources", self.resources)
+
+        super(Katil, self).closeEvent(event);
+
     def add_line_plot(self):
         selected = self.resource_view.currentIndex()
         self.add_plot()
@@ -63,7 +96,7 @@ class Katil(QtWidgets.QMainWindow):
         Sets up the dock containing IPython shell.
         :return: 
         """
-        self.consoleDock = dock = IPythonDock()
+        self.consoleDock = dock = IPythonDock(objectName="consoleDock")
         dock.setup_ipython(self)
         self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, dock)
         self.console = dock.console
@@ -83,16 +116,23 @@ class Katil(QtWidgets.QMainWindow):
         dock.setWidget(self.file_view)
 
         self.file_model.setRootPath(QtCore.QDir.homePath())
-        self.file_view.doubleClicked.connect(self.open_file)
+        self.file_view.doubleClicked.connect(self.add_file_resource)
 
+    def add_file_resource(self, index):
+        """
+        Adds the selected file resource to resource list.
+        :param index: 
+        :return: 
+        """
+        path = self.file_model.filePath(index)
+        self.open_file(path)
 
-    def open_file(self, index):
+    def open_file(self, path):
         """
         Opens the supported file types, as described by the classes in praatkiller.resource module. 
         :param index: 
         :return: 
         """
-        path = self.file_model.filePath(index)
         try:
             ftype = FileTypes["*" + os.path.splitext(path)[1]]
             resource = ftype(path, alias=os.path.split(path)[-1])
@@ -107,8 +147,7 @@ class Katil(QtWidgets.QMainWindow):
                 raise DuplicateFileResourceError()
 
             resource.open()
-            self.resources.append(resource)
-            self.resourceDock.add_resource(resource)
+            self._add_resource(resource)
         except KeyError:
             ext = os.path.splitext(path)[1]
             QMessageBox.critical(self,
@@ -118,6 +157,11 @@ class Katil(QtWidgets.QMainWindow):
             QMessageBox.critical(self,
                                  "Duplicate resource error",
                                  "A resource with this path already exists: \n{}".format(path))
+
+    def _add_resource(self, resource):
+        self.resources.append(resource)
+        self.resourceDock.add_resource(resource)
+
 
     def setup_resources(self):
         """
@@ -164,6 +208,9 @@ class Katil(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     qapp = QtWidgets.QApplication(sys.argv)
+    qapp.setOrganizationName("KeremEryilmaz")
+    qapp.setApplicationName("PraatKatili")
+    qapp.setApplicationDisplayName("Praat Katili")
     global main_widget
     main_widget = Katil()
     sys.exit(qapp.exec_())

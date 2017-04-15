@@ -35,7 +35,7 @@ class FileBrowserDock(Dock):
         view.setAutoScroll(True)
         view.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         view.setAutoExpandDelay(0)
-        # view.doubleClicked.connect(self.open_file)
+        # view.doubleClicked.connect(self.add_file_resource)
         from PyQt5.QtCore import QTimer
         t = t = QTimer()
         t.singleShot(500, self.show_folder)
