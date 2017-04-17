@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QDockWidget, QMessageBox, QAction, QProgressDialog
 from praatkatili.config import *
 from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock
 from praatkatili.resources import *
+from praatkatili.util import sanitize_alias
 
 
 class Katil(QtWidgets.QMainWindow):
@@ -222,6 +223,7 @@ class Katil(QtWidgets.QMainWindow):
         """
         self.resources.append(resource)
         self.resourceDock.add_resource(resource)
+        self.consoleDock.push_vars({sanitize_alias(resource.alias): resource})
 
 
     def setup_resources(self):
@@ -229,7 +231,7 @@ class Katil(QtWidgets.QMainWindow):
         Sets up the resource dock. 
         :return: 
         """
-        self.resourceDock = ResourceDock(objectName="resourceDock")
+        self.resourceDock = ResourceDock(objectName="resourceDock", main_window=self)
         self.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self.resourceDock)
         self.resource_view, self.resource_model = self.resourceDock.view_and_model()
         self.resourceDock.setWidget(self.resource_view)

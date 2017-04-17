@@ -8,6 +8,7 @@ from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
 from praatkatili.canvas import PlotCanvas
 from praatkatili.config import *
+from praatkatili.util import sanitize_alias
 
 
 class Dock(QDockWidget):
@@ -80,7 +81,6 @@ class IPythonDock(Dock):
         def stop():
             kernel_client.stop_channels()
             kernel_manager.shutdown_kernel()
-
         self.console.exit_requested.connect(stop)
         self.push_vars({"KatilInstance": main_window})
         self.console.show()
@@ -93,6 +93,15 @@ class IPythonDock(Dock):
         to the Jupyter console widget
         """
         self.console.kernel_manager.kernel.shell.push(variableDict)
+
+    def pull_var(self, varName, delete=False):
+        v = self.console.kernel_manager.kernel.shell.user_ns[varName]
+        if delete:
+            del self.console.kernel_manager.kernel.shell.user_ns[varName]
+        return v
+
+    def delete_var(self, varName):
+        del self.console.kernel_manager.kernel.shell.user_ns[varName]
 
     def clear(self):
         """
@@ -135,6 +144,7 @@ class PlotDock(Dock):
     xzoom_changed = QtCore.pyqtSignal(int, name="XZoomChanged")
     xshift_changed = QtCore.pyqtSignal(int, name="XShiftChanged")
     yshift_changed = QtCore.pyqtSignal(int, name="YShiftChanged")
+
 
     def __init__(self, main_window, tab_group, blank, *args, **kwargs):
         super(PlotDock, self).__init__(*args, **kwargs)
@@ -222,13 +232,14 @@ class PlotDock(Dock):
 
 
 class ResourceDock(Dock):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, main_window, *args, **kwargs):
         super(ResourceDock, self).__init__(*args, **kwargs)
         self.setMinimumWidth(300)
         self.setMinimumHeight(125)
         self.setFeatures(DOCK_FEATURES)
         self.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
         self.setWindowTitle("Resources")
+        self.main_window = main_window
         print(self.contextMenuPolicy())
 
         self.resource_view = resource_view = QtWidgets.QTreeView()
@@ -241,11 +252,16 @@ class ResourceDock(Dock):
         resource_view.setModel(resource_model)
         resource_view.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         resource_view.customContextMenuRequested.connect(self.context_menu)
+        resource_view.doubleClicked.connect(self.display_resource)
 
         # actions
 
     # def setup_actions(self):
     #     self.plot_line = QAc
+    def display_resource(self):
+        selected = self.resource_view.currentIndex()
+        item = self.resource_model.itemFromIndex(selected)
+        self.main_window.consoleDock.execute_command(sanitize_alias(item.data().alias) + ".data")
 
     def context_menu(self, point):
         # find the selected resource
@@ -253,23 +269,33 @@ class ResourceDock(Dock):
         item = self.resource_model.itemFromIndex(selected)
         if item is None:
             return
-        menu = item.data().create_context_menu(self)
+        menu = item.data().create_context_menu(self, self.main_window)
         menu.exec_(self.mapToGlobal(point))
 
     def view_and_model(self):
         return self.resource_view, self.resource_model
 
     def add_resource(self, resource):
-        r, r2, r3, r4 = QStandardItem(), QStandardItem(), QStandardItem(), QStandardItem()
-        r.setText(resource.alias)
-        r2.setText(resource.__class__.__name__)
+        cname = resource.__class__.__name__
+        r1, r2, r3, r4 = QStandardItem(), QStandardItem(), QStandardItem(), QStandardItem()
+        r1.setText(resource.alias)
+        r2.setText(cname)
         r2.setEditable(False)
         try:
             r3.setText(resource.path)
         except AttributeError:
             r3.setText("N/A")
         r3.setEditable(False)
-        r4.setText(str(resource.data))
+        r4.setText(str(resource).strip())
         r4.setEditable(False)
-        [r.setData(resource) for r in (r, r2, r3, r4)]
-        self.resource_model.appendRow([r, r2, r3, r4])
+        for r in (r1, r2, r3, r4):
+            r.setData(resource)
+        self.resource_model.appendRow([r1, r2, r3, r4])
+
+        # choose the appropriate item delegate
+        from praatkatili.resources import Delegates
+        if cname in Delegates:
+            print("Custom delegate for row {}: {}".format(self.resource_model.rowCount(),
+                                                          Delegates[cname]))
+            self.resource_view.setItemDelegateForRow(self.resource_model.rowCount(),
+                                                     Delegates[cname])

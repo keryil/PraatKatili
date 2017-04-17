@@ -1,7 +1,8 @@
 import os
 
-from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QMenu, QStyledItemDelegate
 
+from praatkatili.audio_processing import generate_actions
 from pyAudioAnalysis import audioBasicIO
 
 # holds all open resource instances
@@ -40,10 +41,15 @@ class Resource(object):
     def __del__(self):
         OpenResources.remove(self)
 
-    def create_context_menu(self, parent):
+    def __str__(self):
+        return str(self.data)
+
+    def create_context_menu(self, parent, main_window):
         menu = QMenu(parent)
         plot_menu = menu.addMenu("Plot")
         plot_menu.addActions(parent.parent().plot_actions)
+        process_menu = menu.addMenu("Analysis")
+        process_menu.addActions(generate_actions(parent, self, main_window))
         return menu
 
 
@@ -52,6 +58,7 @@ class FileResource(Resource):
     Generic text file, parent class to all other file resources. 
     """
     file_masks = []
+
     def __init__(self, path, *args, alias=None, writable=True, **kwargs):
         super(FileResource, self).__init__(alias, *args, **kwargs)
         if not os.path.exists(path):
@@ -89,6 +96,30 @@ class WAVFile(FileResource):
         return self.data
 
 
+class Array(Resource):
+    """
+    Resource wrapper for Numpy arrays.
+    """
+    count = 0
+
+    def __init__(self, alias, data, *args, **kwargs):
+        super(Array, self).__init__(alias, *args, **kwargs)
+        self.data = data
+        self.sample_rate = None
+
+    def open(self):
+        pass
+
+    def __str__(self):
+        s = "{}({})".format(self.data.__class__.__name__, self.data.shape)
+        return s
+
+
+class ArrayDelegate(QStyledItemDelegate):
+    def __init__(self, *args, **kwargs):
+        super(ArrayDelegate, self).__init__(*args, **kwargs)
+
+
 class UnknownResourceTypeError(Exception):
     pass
 
@@ -100,3 +131,5 @@ FileTypes = {}
 for type in (WAVFile, CSVFile):
     for ext in type.file_masks:
         FileTypes[ext] = type
+
+Delegates = {Array: ArrayDelegate}
