@@ -299,3 +299,8 @@ class ResourceDock(Dock):
                                                           Delegates[cname]))
             self.resource_view.setItemDelegateForRow(self.resource_model.rowCount(),
                                                      Delegates[cname])
+
+    def delete_resource(self, resource):
+        found = self.main_window.resource_model.findItems(resource.data().alias)[0]
+        self.main_window.resource_model.removeRow(found.row())
+        print()

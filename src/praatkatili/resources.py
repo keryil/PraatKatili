@@ -1,6 +1,7 @@
 import os
 
 from PyQt5.QtWidgets import QMenu, QStyledItemDelegate
+from formlayout import QAction
 
 from praatkatili.audio_processing import generate_actions
 from pyAudioAnalysis import audioBasicIO
@@ -50,6 +51,12 @@ class Resource(object):
         plot_menu.addActions(parent.parent().plot_actions)
         process_menu = menu.addMenu("Analysis")
         process_menu.addActions(generate_actions(parent, self, main_window))
+        delete = QAction("Delete", parent)
+        selected = main_window.resource_view.currentIndex()
+        item = main_window.resource_model.itemFromIndex(selected)
+        delete.triggered.connect(lambda checked, res=item:
+                                 main_window._delete_resource(res))
+        menu.addAction(delete)
         return menu
 
 

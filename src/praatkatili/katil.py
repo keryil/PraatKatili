@@ -2,7 +2,7 @@ import sys
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QDockWidget, QMessageBox, QAction, QProgressDialog
+from PyQt5.QtWidgets import QDockWidget, QMessageBox, QProgressDialog
 
 from praatkatili.config import *
 from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock
@@ -224,6 +224,13 @@ class Katil(QtWidgets.QMainWindow):
         self.resources.append(resource)
         self.resourceDock.add_resource(resource)
         self.consoleDock.push_vars({sanitize_alias(resource.alias): resource})
+
+    def _delete_resource(self, resource):
+        i = self.resources.index(resource.data())
+        self.resources = self.resources[:i] + self.resources[i + 1:]
+        var_name = sanitize_alias(resource.data().alias)
+        self.resourceDock.delete_resource(resource)
+        self.consoleDock.delete_var(var_name)
 
 
     def setup_resources(self):
