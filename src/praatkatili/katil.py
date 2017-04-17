@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QDockWidget, QMessageBox, QAction
 
 from praatkatili.config import *
 from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock
-from praatkatili.resource import *
+from praatkatili.resources import *
 
 
 class Katil(QtWidgets.QMainWindow):
@@ -38,9 +38,26 @@ class Katil(QtWidgets.QMainWindow):
 
         self.addActions(self.plot_actions + self.resource_actions)
 
-        settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
+        self.settings = settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
                              "KeremEryilmaz", "PraatKatili");
         # settings.setValue("windowState", self.saveState());
+        ress = settings.value("Katil/resources")
+        if ress:
+            counter = 0
+            for res in ress:
+                res.open()
+                self._add_resource(res)
+                counter += 1
+            print("Restored {} file resources.".format(counter))
+        plots = settings.value("Katil/plots")
+        if plots:
+            counter = 0
+            for p in plots:
+                self.add_plot(blank=True)
+                self.plots[-1].canvas.from_dict(p)
+                counter += 1
+            print("Restored {} plots.".format(counter))
+
         try:
             geo = settings.value("Katil/geometry")
             state = settings.value("Katil/windowState")
@@ -50,22 +67,6 @@ class Katil(QtWidgets.QMainWindow):
             self.restoreGeometry(geo)
             self.restoreState(state)
             print("Restored window state.")
-        ress = settings.value("Katil/resources")
-        if ress:
-            counter = 0
-            for res in ress:
-                res.open()
-                self._add_resource(res)
-                counter += 1
-            print("Restored {} file resources.".format(counter))
-
-            # plots = settings.value("Katil/plots")
-            # if plots:
-            #     counter = 0
-            #     for p in plots:
-            #         self._add_plot(p)
-            #         counter += 1
-            #     print("Restored {} plots.".format(counter))
 
     def closeEvent(self, event):
         settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
@@ -75,7 +76,7 @@ class Katil(QtWidgets.QMainWindow):
 
         # serialize file resources
         settings.setValue("Katil/resources", self.resources)
-        # settings.setValue("Katuk/plots", self.plots)
+        settings.setValue("Katil/plots", [p.canvas.to_dict() for p in self.plots])
 
         super(Katil, self).closeEvent(event);
 
@@ -110,9 +111,9 @@ class Katil(QtWidgets.QMainWindow):
         self.setup_console()
         self.setup_browser()
         self.setup_resources()
-        self.add_plot()
-        self.add_plot(0)
-        self.add_plot()
+        # self.add_plot()
+        # self.add_plot(0)
+        # self.add_plot()
 
     def setup_console(self):
         """

@@ -161,7 +161,7 @@ class PlotDock(Dock):
         f.setSizePolicy(expand, expand)
 
         # canvas on frame
-        self.canvas = canvas = PlotCanvas(blank=blank)
+        self.canvas = canvas = PlotCanvas(blank=blank, dock=self)
         f.layout().addWidget(canvas, 2, 2, 1, 3)
         canvas.setSizePolicy(expand, expand)
         sc.setWidget(f)
@@ -170,7 +170,6 @@ class PlotDock(Dock):
         self.setWindowTitle("{} (plot{:>2})".format(canvas.axes.get_title(),
                                                     main_window.plot_counter))
 
-        canvas.dock = self
         self.setup_sliders()
 
     def setup_slider(self, slider, geometry, signal):
