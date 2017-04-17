@@ -217,21 +217,30 @@ class Katil(QtWidgets.QMainWindow):
 
     def _add_resource(self, resource):
         """
-        Adds a generic resource to the resources list.
+        Adds a generic resource to the resources list, and adds it 
+        to the ipython namespace.
         :param resource: 
         :return: 
         """
+        found = self.resource_model.findItems(resource.alias)
+        if len(found) > 0:
+            resource.alias += "_{}".format(len(found))
         self.resources.append(resource)
         self.resourceDock.add_resource(resource)
         self.consoleDock.push_vars({sanitize_alias(resource.alias): resource})
 
     def _delete_resource(self, resource):
+        """
+        Deletes a generic resource from the resources list, and removes 
+        it from the ipython namespace.
+        :param resource: 
+        :return: 
+        """
         i = self.resources.index(resource.data())
         self.resources = self.resources[:i] + self.resources[i + 1:]
         var_name = sanitize_alias(resource.data().alias)
         self.resourceDock.delete_resource(resource)
         self.consoleDock.delete_var(var_name)
-
 
     def setup_resources(self):
         """

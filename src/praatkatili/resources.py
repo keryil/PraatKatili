@@ -6,9 +6,10 @@ from formlayout import QAction
 from praatkatili.audio_processing import generate_actions
 from pyAudioAnalysis import audioBasicIO
 
+
 # holds all open resource instances
 # {resource_class_name: [instance1, instance2, ...]}
-OpenResources = dict()
+
 
 class Resource(object):
     """
@@ -18,11 +19,6 @@ class Resource(object):
     def __init__(self, alias, *args, **kwargs):
         super(Resource, self).__init__(*args, **kwargs)
         self.alias = alias
-        cname = self.__class__.__name__
-        if cname not in OpenResources:
-            OpenResources[cname] = set()
-        OpenResources[cname].add(self)
-
 
     def __str__(self):
         return "{}({})".format(self.__class__.__name__, self.alias)
@@ -38,9 +34,6 @@ class Resource(object):
 
     def plot(self):
         raise NotImplementedError()
-
-    def __del__(self):
-        OpenResources.remove(self)
 
     def __str__(self):
         return str(self.data)
