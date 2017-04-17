@@ -45,7 +45,7 @@ class Katil(QtWidgets.QMainWindow):
         progress.setModal(True)
 
         self.settings = settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
-                                             "KeremEryilmaz", "PraatKatili");
+                                             "KeremEryilmaz", "PraatKatili")
         ress = settings.value("Katil/resources")
         if ress:
             counter = 0
@@ -59,8 +59,9 @@ class Katil(QtWidgets.QMainWindow):
         plots = settings.value("Katil/plots")
         if plots:
             counter = 0
-            for p in plots:
-                self.add_plot(blank=True)
+            for tab_group, p in plots:
+                self.add_plot(tab_group=tab_group,
+                              blank=True)
                 self.plots[-1].canvas.from_dict(p)
                 counter += 1
                 progress.setValue(30 + counter * 50 / len(plots))
@@ -100,7 +101,7 @@ class Katil(QtWidgets.QMainWindow):
         plots = []
         progress.setLabelText("Saving plots...")
         for i, p in enumerate(self.plots):
-            plots.append(p.canvas.to_dict())
+            plots.append((p.tab_group, p.canvas.to_dict()))
             progress.setValue(50 + (i + 1) * (45 / len(self.plots)))
         settings.setValue("Katil/plots", plots)
         progress.setValue(100)
