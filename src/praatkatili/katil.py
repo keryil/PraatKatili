@@ -2,7 +2,7 @@ import sys
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSettings
-from PyQt5.QtWidgets import QDockWidget, QMessageBox, QAction
+from PyQt5.QtWidgets import QDockWidget, QMessageBox, QAction, QProgressDialog
 
 from praatkatili.config import *
 from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock
@@ -35,12 +35,17 @@ class Katil(QtWidgets.QMainWindow):
         add_file = QAction("Add file as resource", self)
         remove_resource = QAction("Remove resource", self)
         self.resource_actions = [add_file, remove_resource]
-
         self.addActions(self.plot_actions + self.resource_actions)
 
+        self.restoreSettings()
+
+    def restoreSettings(self):
+        progress = QProgressDialog("Restoring resources...", "Cancel", 0, 100)
+        progress.setMinimumDuration(1000)
+        progress.setModal(True)
+
         self.settings = settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
-                             "KeremEryilmaz", "PraatKatili");
-        # settings.setValue("windowState", self.saveState());
+                                             "KeremEryilmaz", "PraatKatili");
         ress = settings.value("Katil/resources")
         if ress:
             counter = 0
@@ -48,7 +53,9 @@ class Katil(QtWidgets.QMainWindow):
                 res.open()
                 self._add_resource(res)
                 counter += 1
+                progress.setValue(counter * 30 / len(ress))
             print("Restored {} file resources.".format(counter))
+        progress.setLabelText("Restoring plots")
         plots = settings.value("Katil/plots")
         if plots:
             counter = 0
@@ -56,8 +63,9 @@ class Katil(QtWidgets.QMainWindow):
                 self.add_plot(blank=True)
                 self.plots[-1].canvas.from_dict(p)
                 counter += 1
+                progress.setValue(30 + counter * 50 / len(plots))
             print("Restored {} plots.".format(counter))
-
+        progress.setLabelText("Restoring window geometry and state")
         try:
             geo = settings.value("Katil/geometry")
             state = settings.value("Katil/windowState")
@@ -67,18 +75,44 @@ class Katil(QtWidgets.QMainWindow):
             self.restoreGeometry(geo)
             self.restoreState(state)
             print("Restored window state.")
+        progress.setValue(100)
 
     def closeEvent(self, event):
+        self.save_settings()
+        super(Katil, self).closeEvent(event);
+
+    def save_settings(self):
+        progress = QProgressDialog("Saving geometry...", "Cancel", 0, 100)
+        progress.setMinimumDuration(500)
+        progress.setModal(True)
+        # progress.show()
+
         settings = QSettings(QSettings.IniFormat, QSettings.UserScope,
                              "KeremEryilmaz", "PraatKatili");
         settings.setValue("Katil/geometry", self.saveGeometry());
+        progress.setValue(10)
+        progress.setLabelText("Saving window state...")
         settings.setValue("Katil/windowState", self.saveState());
-
-        # serialize file resources
+        progress.setValue(20)
+        progress.setLabelText("Saving resources...")
         settings.setValue("Katil/resources", self.resources)
-        settings.setValue("Katil/plots", [p.canvas.to_dict() for p in self.plots])
+        progress.setValue(50)
+        plots = []
+        progress.setLabelText("Saving plots...")
+        for i, p in enumerate(self.plots):
+            plots.append(p.canvas.to_dict())
+            progress.setValue(50 + (i + 1) * (45 / len(self.plots)))
+        settings.setValue("Katil/plots", plots)
+        progress.setValue(100)
 
-        super(Katil, self).closeEvent(event);
+    def delete_plot(self, dock):
+        """
+        Permanently deletes a plot, so that it doesn't get saved with the session at all. 
+        :return: 
+        """
+        i = self.plots.index(dock)
+        self.plots = self.plots[:i] + self.plots[i + 1:]
+        dock.close()
 
     def add_line_plot(self):
         selected = self.resource_view.currentIndex()
@@ -111,9 +145,6 @@ class Katil(QtWidgets.QMainWindow):
         self.setup_console()
         self.setup_browser()
         self.setup_resources()
-        # self.add_plot()
-        # self.add_plot(0)
-        # self.add_plot()
 
     def setup_console(self):
         """
@@ -183,6 +214,11 @@ class Katil(QtWidgets.QMainWindow):
                                  "A resource with this path already exists: \n{}".format(path))
 
     def _add_resource(self, resource):
+        """
+        Adds a generic resource to the resources list.
+        :param resource: 
+        :return: 
+        """
         self.resources.append(resource)
         self.resourceDock.add_resource(resource)
 
@@ -199,7 +235,7 @@ class Katil(QtWidgets.QMainWindow):
 
     def add_plot(self, tab_group=None, blank=False):
         """
-        Adds a new plot dock, optionally belonging to a tab group.
+        Creates and adds a new plot dock, optionally belonging to a tab group.
         :param tab_group: 
         :return: 
         """
@@ -219,6 +255,13 @@ class Katil(QtWidgets.QMainWindow):
         self._add_plot(dock, tab_group)
 
     def _add_plot(self, dock, tab_group):
+        """
+        Adds the given plot dock to the window and puts it in 
+        the right tab group.
+        :param dock: 
+        :param tab_group: 
+        :return: 
+        """
         self.addDockWidget(QtCore.Qt.RightDockWidgetArea, dock)
         if tab_group is not None:
             for p in filter(lambda x: x.tab_group == tab_group, self.plots):
@@ -232,7 +275,6 @@ class Katil(QtWidgets.QMainWindow):
 
         self.plots.append(dock)
         self.plot_counter += 1
-
 
 
 if __name__ == "__main__":
