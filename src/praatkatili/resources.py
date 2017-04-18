@@ -13,7 +13,7 @@ These are actions on resources, as represented in the context menus
 
 def transform_array(resource, main_win):
     datalist = [("Alias for result", "{}_transformed".format(resource.alias)),
-                ("Code to run", "_data + 1")]
+                ("Code to run", "_data + 1\n")]
     res = fedit(datalist, title="Transform array",
                 comment="Applies arbitrary ipython statements to data. Use _data to access the data structure.")
     if res is not None:
