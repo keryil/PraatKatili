@@ -1,6 +1,6 @@
 import os
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWebEngineWidgets
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QDockWidget, QAbstractItemView, QLabel
 from qtconsole.inprocess import QtInProcessKernelManager
@@ -304,3 +304,14 @@ class ResourceDock(Dock):
         found = self.main_window.resource_model.findItems(resource.data().alias)[0]
         self.main_window.resource_model.removeRow(found.row())
         print()
+
+
+class NotebookDock(Dock):
+    def __init__(self, main_window, *args, **kwargs):
+        super(NotebookDock, self).__init__(*args, **kwargs)
+        self.main_window = main_window
+        self.browser = QtWebEngineWidgets.QWebEngineView()
+        self.browser.load(QtCore.QUrl("http://localhost:8888/"))
+        self.setWidget(self.browser)
+        self.setWindowTitle("IPython Notebook")
+        self.browser.show()

@@ -3,9 +3,7 @@ import os
 from PyQt5.QtWidgets import QMenu, QStyledItemDelegate
 from formlayout import QAction, fedit
 
-# from praatkatili.audio_processing import generate_actions
 from pyAudioAnalysis import audioBasicIO, audioFeatureExtraction
-
 
 """
 These are actions on resources, as represented in the context menus

@@ -5,7 +5,7 @@ from PyQt5.QtCore import QSettings
 from PyQt5.QtWidgets import QDockWidget, QMessageBox, QProgressDialog
 
 from praatkatili.config import *
-from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock
+from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock, NotebookDock
 from praatkatili.resources import *
 from praatkatili.util import sanitize_alias
 
@@ -144,8 +144,9 @@ class Katil(QtWidgets.QMainWindow):
         Initializes the UI.
         :return: 
         """
+        self.setup_jupyter_notebook()
         self.setup_console()
-        self.setup_browser()
+        self.setup_file_browser()
         self.setup_resources()
 
     def setup_console(self):
@@ -162,9 +163,14 @@ class Katil(QtWidgets.QMainWindow):
     def find_docks(self, name=None):
         return self.findChildren(QDockWidget, name)
 
-    def setup_browser(self):
+    def setup_jupyter_notebook(self):
+        self.notebookDock = dock = NotebookDock(objectName="notebookDock",
+                                                main_window=self)
+        self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, dock)
+
+    def setup_file_browser(self):
         """
-        Sets up the resource browser.
+        Sets up the file browser.
         :return: 
         """
         self.browserDock = dock = FileBrowserDock(objectName="browserDock", file_model=self.file_model)
