@@ -1,10 +1,11 @@
 from PyQt5.QtWidgets import QAction
 from formlayout import fedit
 
-from praatkatili import resources
+from praatkatili.resources import Array, FileResource
 from pyAudioAnalysis import audioFeatureExtraction
 
 global main_widget
+
 
 
 def transform_array(resource, main_win):
@@ -35,7 +36,7 @@ def short_term_features(data, Fs, main_win):
                 comment="Returns a matrix that consists of 34 feature time series.")
     if res is not None:
         win_size, step_size, alias = res
-        arr = resources.Array(alias=alias,
+        arr = Array(alias=alias,
                               data=audioFeatureExtraction.stFeatureExtraction(data, Fs, win_size * Fs, step_size * Fs));
         main_win._add_resource(arr)
         return arr
@@ -44,7 +45,7 @@ def short_term_features(data, Fs, main_win):
 def generate_actions(parent, resource, main_window):
     to_return = []
     is_numeric = False
-    for r in (resources.Array, resources.FileResource):
+    for r in (Array, FileResource):
         if isinstance(resource, r):
             is_numeric = True
             break
