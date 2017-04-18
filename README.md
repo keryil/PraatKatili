@@ -6,6 +6,8 @@ Everybody loves Praat. But everybody also hates Praat. Especially the hundreds o
 
 This is strictly Python 3. The GUI library is PyQt5. Naturally, we use numpy for arrays and such. pyAudioAnalysis handles the signal processing (through other libraries), although this will definitely be extended if this thing sees enough use. Mostly because I am having to port that library to Python 3 and I am not known for seeing things through. It would be particularly fitting if somebody could take a chair and tame some of them underlying Praat goodies and expose them to Python. 
 
+The name means PraatKiller in Turkish. It is in Turkish to cause as little as offense as possible while professing my deeply rooted mental issues with the Praat base code. 
+
 ## Features
 * Integrated IPython shell. You can interact with everything, Blender style. 
 * File browser.
