@@ -81,6 +81,7 @@ class Katil(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.save_settings()
+        self.notebookDock.stop_server()
         super(Katil, self).closeEvent(event);
 
     def save_settings(self):
@@ -307,6 +308,7 @@ if __name__ == "__main__":
     qapp.setOrganizationName("KeremEryilmaz")
     qapp.setApplicationName("PraatKatili")
     qapp.setApplicationDisplayName("Praat Katili")
+    qapp.setWheelScrollLines(20)
     global main_widget
     main_widget = Katil()
     sys.exit(qapp.exec_())

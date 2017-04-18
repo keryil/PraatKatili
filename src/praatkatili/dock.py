@@ -1,8 +1,15 @@
+import locale
 import os
+import shlex
+import subprocess
+
+import jupyter_core
+
+encoding = locale.getdefaultlocale()[1]
 
 from PyQt5 import QtCore, QtWebEngineWidgets
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QDockWidget, QAbstractItemView, QLabel
+from PyQt5.QtWidgets import QDockWidget, QAbstractItemView, QLabel, QTabWidget
 from qtconsole.inprocess import QtInProcessKernelManager
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
@@ -306,12 +313,98 @@ class ResourceDock(Dock):
         print()
 
 
+class NotebookTab(QtWebEngineWidgets.QWebEngineView):
+    def __init__(self, dock, *args, **kwargs):
+        super(NotebookTab, self).__init__(*args, **kwargs)
+        self.dock = dock
+        self.titleChanged.connect(self.refresh_title)
+
+    # def load(self, url):
+    #     super(NotebookTab, self).load(url)
+    #     self.refresh_title()
+
+    def refresh_title(self, title=None):
+        if title is None:
+            title = self.title()
+        self.dock.tabWidget.setTabText(self.dock.tabWidget.indexOf(self),
+                                       title)
+
+    # def showEvent(self, event):
+    #     super(NotebookTab, self).showEvent(event)
+    #     self.refresh_title()
+
+
+    def createWindow(self, QWebEnginePage_WebWindowType):
+        tab = self.dock.addTab()
+        self.dock.tabWidget.setCurrentWidget(tab)
+        return tab
+
+
 class NotebookDock(Dock):
     def __init__(self, main_window, *args, **kwargs):
         super(NotebookDock, self).__init__(*args, **kwargs)
+        self.tabWidget = QTabWidget()
         self.main_window = main_window
-        self.browser = QtWebEngineWidgets.QWebEngineView()
-        self.browser.load(QtCore.QUrl("http://localhost:8888/"))
-        self.setWidget(self.browser)
-        self.setWindowTitle("IPython Notebook")
-        self.browser.show()
+        self.jupyter_process = None
+        self.connection_json = None
+
+        expand = QtWidgets.QSizePolicy.Expanding
+        f = QtWidgets.QFrame()
+        f.setLayout(QtWidgets.QHBoxLayout())
+        f.setSizePolicy(expand, expand)
+        self.setWidget(f)
+        f.layout().addWidget(self.tabWidget)
+        self.setWindowTitle("IPython Notebooks")
+        self.start_server()
+        self.addTab()
+        # self.browser.show()
+        # self.load()
+
+    def addTab(self, url=None, request=None):
+        tab = NotebookTab(dock=self)
+        if request is not None:
+            request.openIn(tab)
+        if url is None:
+            tab.load(self.url)
+        self.tabWidget.addTab(tab, "")
+        return tab
+
+    def closeEvent(self, event):
+        self.stop_server()
+        super(NotebookDock, self).closeEvent(event)
+
+    def start_server(self):
+        from glob import glob
+        if self.jupyter_process is not None:
+            self.stop_server()
+        json_dir = jupyter_core.paths.jupyter_runtime_dir()
+        jsons_before = glob(os.path.join(json_dir, "*.json"))
+        args = shlex.split("jupyter notebook --no-browser")
+        self.jupyter_process = p = subprocess.Popen(args=args,
+                                                    stderr=subprocess.PIPE)
+
+        # figure out the url from the initial console messages
+        line = p.stderr.readline().decode(encoding).strip()
+        while "localhost" not in line:
+            line = p.stderr.readline().decode(encoding).strip()
+        self.url = QtCore.QUrl(line.split("at: ")[-1])
+        from time import sleep;
+        sleep(.5)
+        jsons_after = glob(os.path.join(json_dir, "*.json"))
+        for json in jsons_after:
+            if json not in jsons_before:
+                self.connection_json = json
+                break
+        else:
+            raise FileNotFoundError("Could not find the connection JSON in {}.".format(json_dir))
+
+    def stop_server(self):
+        if self.jupyter_process:
+            print("Killing Jupyter process (PID {})...".format(self.jupyter_process.pid))
+            self.jupyter_process.kill()
+            outs, errs = self.jupyter_process.communicate()
+            self.jupyter_process = None
+            self.connection_json = None
+
+    def __del__(self):
+        self.stop_server()
