@@ -9,7 +9,8 @@ This is strictly Python 3. The GUI library is PyQt5. Naturally, we use numpy for
 The name means PraatKiller in Turkish. It is in Turkish to cause as little as offense as possible while professing my deeply rooted mental issues with the Praat base code. 
 
 ## Features
-* Integrated IPython shell. You can interact with everything, Blender style. 
+* Integrated, in process IPython shell. You can interact with everything, Blender style. 
+* Integrated IPython Jupyter Notebooks. 
 * File browser.
 * Resource browser. Holds files, arrays of interest, and so on. A bit like Praat. Linked to both the file browser *and* the IPython shell.
 * Matplotlib integration. Plot various styles, tinker with them if you want. 
