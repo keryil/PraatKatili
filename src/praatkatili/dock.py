@@ -12,7 +12,7 @@ encoding = locale.getdefaultlocale()[1]
 
 from PyQt5 import QtCore, QtWebEngineWidgets
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
-from PyQt5.QtWidgets import QDockWidget, QAbstractItemView, QLabel, QTabWidget
+from PyQt5.QtWidgets import QDockWidget, QAbstractItemView, QLabel, QTabWidget, QTabBar
 from qtconsole.inprocess import QtInProcessKernelManager
 from qtconsole.rich_jupyter_widget import RichJupyterWidget
 
@@ -347,10 +347,12 @@ class NotebookTab(QtWebEngineWidgets.QWebEngineView):
 class NotebookDock(Dock):
     def __init__(self, main_window, *args, **kwargs):
         super(NotebookDock, self).__init__(*args, **kwargs)
-        self.tabWidget = QTabWidget()
-        self.main_window = main_window
         self.jupyter_process = None
         self.connection_json = None
+
+        self.tabWidget = QTabWidget()
+        self.tabWidget.setTabsClosable(True)
+        self.main_window = main_window
 
         expand = QtWidgets.QSizePolicy.Expanding
         f = QtWidgets.QFrame()
@@ -361,17 +363,22 @@ class NotebookDock(Dock):
         self.setWindowTitle("IPython Notebooks")
         self.start_server()
         self.addTab()
-        # self.browser.show()
-        # self.load()
 
     def addTab(self, url=None, request=None):
         tab = NotebookTab(dock=self)
+        self.tabWidget.addTab(tab, "")
         if request is not None:
             request.openIn(tab)
-        if url is None:
+        elif url is None:
             tab.load(self.url)
-        self.tabWidget.addTab(tab, "")
+            self.tabWidget.tabBar().tabButton(0, QTabBar.RightSide).hide()
+        self.tabWidget.tabCloseRequested.connect(self.close_tab)
         return tab
+
+    def close_tab(self, index):
+        tab = self.tabWidget.widget(index)
+        self.tabWidget.removeTab(index)
+        del tab
 
     def closeEvent(self, event):
         self.stop_server()
@@ -388,11 +395,19 @@ class NotebookDock(Dock):
                                                     stderr=subprocess.PIPE)
 
         # figure out the url from the initial console messages
+        from re import search
         line = p.stderr.readline().decode(encoding).strip()
-        while "localhost" not in line:
+        matches = search("http://.*:(.*?)/", line)
+        # print(line)
+        while matches is None:
             line = p.stderr.readline().decode(encoding).strip()
-        self.url = QtCore.QUrl(line.split("at: ")[-1])
-        from time import sleep;
+            # print(line)
+            matches = search("http://.*:(.*?)/", line)
+        url = "http://{}:{}/".format("localhost", matches.groups(1)[0])
+        # print("URL: " + url)
+        self.url = QtCore.QUrl(url)
+        print("Notebook at: {}".format(self.url))
+        from time import sleep
         sleep(.1)
         jsons_after = glob(os.path.join(json_dir, "*.json"))
         for json in jsons_after:
@@ -410,7 +425,7 @@ class NotebookDock(Dock):
         # client.start_channels()
         # shell = self.notebook_manager.connect_shell()
         # control = self.notebook_manager.connect_control()
-        print(self.notebook_client, dir(self.notebook_client))
+        # print(self.notebook_client, dir(self.notebook_client))
         # shell.write({})
         self.notebook_client.execute("test=123")
         # self.notebook_manager.start_channels()
