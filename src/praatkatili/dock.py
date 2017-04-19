@@ -6,8 +6,6 @@ import subprocess
 import jupyter_client
 import jupyter_core
 
-# import jupyter
-
 encoding = locale.getdefaultlocale()[1]
 
 from PyQt5 import QtCore, QtWebEngineWidgets
@@ -265,10 +263,6 @@ class ResourceDock(Dock):
         resource_view.customContextMenuRequested.connect(self.context_menu)
         resource_view.doubleClicked.connect(self.display_resource)
 
-        # actions
-
-    # def setup_actions(self):
-    #     self.plot_line = QAc
     def display_resource(self):
         selected = self.resource_view.currentIndex()
         item = self.resource_model.itemFromIndex(selected)
@@ -323,19 +317,12 @@ class NotebookTab(QtWebEngineWidgets.QWebEngineView):
         self.dock = dock
         self.titleChanged.connect(self.refresh_title)
 
-    # def load(self, url):
-    #     super(NotebookTab, self).load(url)
-    #     self.refresh_title()
 
     def refresh_title(self, title=None):
         if title is None:
             title = self.title()
         self.dock.tabWidget.setTabText(self.dock.tabWidget.indexOf(self),
                                        title)
-
-    # def showEvent(self, event):
-    #     super(NotebookTab, self).showEvent(event)
-    #     self.refresh_title()
 
 
     def createWindow(self, QWebEnginePage_WebWindowType):
@@ -421,14 +408,7 @@ class NotebookDock(Dock):
         self.notebook_client.load_connection_file()
 
         self.notebook_client.start_channels()
-        # client = self.notebook_manager.client()
-        # client.start_channels()
-        # shell = self.notebook_manager.connect_shell()
-        # control = self.notebook_manager.connect_control()
-        # print(self.notebook_client, dir(self.notebook_client))
-        # shell.write({})
         self.notebook_client.execute("test=123")
-        # self.notebook_manager.start_channels()
 
     def stop_server(self):
         if self.jupyter_process:
