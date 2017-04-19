@@ -3,7 +3,10 @@ import os
 import shlex
 import subprocess
 
+import jupyter_client
 import jupyter_core
+
+# import jupyter
 
 encoding = locale.getdefaultlocale()[1]
 
@@ -79,7 +82,8 @@ class IPythonDock(Dock):
         Sets up the ipython shell for the relevant docks. 
         :return: 
         """
-        self.console.kernel_manager = kernel_manager = QtInProcessKernelManager()
+        self.console.kernel_manager = kernel_manager = \
+            QtInProcessKernelManager()
         kernel_manager.start_kernel(show_banner=True)
         kernel_manager.kernel.gui = 'qt'
         self.console.kernel_client = kernel_client = kernel_manager.client()
@@ -389,7 +393,7 @@ class NotebookDock(Dock):
             line = p.stderr.readline().decode(encoding).strip()
         self.url = QtCore.QUrl(line.split("at: ")[-1])
         from time import sleep;
-        sleep(.5)
+        sleep(.1)
         jsons_after = glob(os.path.join(json_dir, "*.json"))
         for json in jsons_after:
             if json not in jsons_before:
@@ -397,6 +401,19 @@ class NotebookDock(Dock):
                 break
         else:
             raise FileNotFoundError("Could not find the connection JSON in {}.".format(json_dir))
+
+        self.notebook_client = jupyter_client.BlockingKernelClient(connection_file=self.connection_json)
+        self.notebook_client.load_connection_file()
+
+        self.notebook_client.start_channels()
+        # client = self.notebook_manager.client()
+        # client.start_channels()
+        # shell = self.notebook_manager.connect_shell()
+        # control = self.notebook_manager.connect_control()
+        print(self.notebook_client, dir(self.notebook_client))
+        # shell.write({})
+        self.notebook_client.execute("test=123")
+        # self.notebook_manager.start_channels()
 
     def stop_server(self):
         if self.jupyter_process:
