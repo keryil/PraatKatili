@@ -8,6 +8,7 @@ from praatkatili.config import *
 from praatkatili.dock import PlotDock, ResourceDock, FileBrowserDock, IPythonDock, NotebookDock
 from praatkatili.resources import *
 from praatkatili.util import sanitize_alias
+import pandas as pd
 
 
 class Katil(QtWidgets.QMainWindow):

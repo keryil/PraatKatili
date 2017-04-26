@@ -1,4 +1,6 @@
 import os
+import pandas as pd
+import numpy as np
 
 from PyQt5.QtWidgets import QMenu, QStyledItemDelegate
 from formlayout import QAction, fedit
@@ -30,6 +32,28 @@ def transform_array(resource, main_win):
 
 
 def short_term_features(data, Fs, main_win):
+    """
+    Short term features:
+    1 	Zero Crossing Rate 	The rate of sign-changes of the signal during the duration of a particular frame.
+    2 	Energy 	The sum of squares of the signal values, normalized by the respective frame length.
+    3 	Entropy of Energy 	The entropy of sub-frames' normalized energies. It can be interpreted as a measure of abrupt changes.
+    4 	Spectral Centroid 	The center of gravity of the spectrum.
+    5 	Spectral Spread 	The second central moment of the spectrum.
+    6 	Spectral Entropy 	Entropy of the normalized spectral energies for a set of sub-frames.
+    7 	Spectral Flux 	The squared difference between the normalized magnitudes of the spectra of the two successive frames.
+    8 	Spectral Rolloff 	The frequency below which 90% of the magnitude distribution of the spectrum is concentrated.
+    9-21 	MFCCs 	Mel Frequency Cepstral Coefficients form a cepstral representation where the frequency bands are not linear but distributed according to the mel-scale.
+    22-33 	Chroma Vector 	A 12-element representation of the spectral energy where the bins represent the 12 equal-tempered pitch classes of western-type music (semitone spacing).
+    34 	Chroma Deviation 	The standard deviation of the 12 chroma coefficients.
+    """
+    feat_labels = ["Zero Crossing Rate", "Energy", "Entropy of Energy", "Spectral Centroid", "Spectral Spread", "Spectral Entropy",
+                   "Spectral Flux", "Spectral Rolloff"]
+    for i in range(13):
+        feat_labels.append("MFCC_{}".format(i))
+    for i in range(2):
+        feat_labels.append("ChromaVector_{}".format(i))
+    feat_labels.append("Chroma Deviation")
+
     datalist = [("Window size", .05),
                 ("Step size", .05),
                 ("Result alias", "STF")]
@@ -37,7 +61,13 @@ def short_term_features(data, Fs, main_win):
                 comment="Returns a matrix that consists of 34 feature time series.")
     if res is not None:
         win_size, step_size, alias = res
-        arr = Array(alias=alias, data=audioFeatureExtraction.stFeatureExtraction(data, Fs, win_size * Fs, step_size * Fs));
+        data = audioFeatureExtraction.stFeatureExtraction(data, Fs, win_size * Fs, step_size * Fs)
+        series = []
+        for row, label in zip(data, feat_labels):
+            series.append(pd.Series(data=row, name=label))
+        print("{} series produced, of length {}".format(len(series), len(series[0])))
+        data = pd.concat(series, axis=1)
+        arr = Array(alias=alias, data=data)
         main_win._add_resource(arr)
         return arr
 
@@ -146,13 +176,19 @@ class WAVFile(FileResource):
     """
     file_masks = ("*.wav", "*.wave")
 
-    def __init__(self, path, *args, **kwargs):
-        super(WAVFile, self).__init__(path, *args, **kwargs)
+    def __init__(self, path, alias, *args, **kwargs):
+        super(WAVFile, self).__init__(path, *args, alias=alias, **kwargs)
         self.sample_rate = -1
 
     def open(self):
         self.sample_rate, self.data = audioBasicIO.readAudioFile(self.path)
+        self.data = pd.Series(self.data,
+                              name="WAV:{}".format(self.alias),
+                              dtype=np.float64)
         return self.data
+
+    def __str__(self):
+        return "WAVFile({})".format(self.path)
 
 
 class Array(Resource):
@@ -163,6 +199,8 @@ class Array(Resource):
 
     def __init__(self, alias, data, *args, **kwargs):
         super(Array, self).__init__(alias, *args, **kwargs)
+        if not (isinstance(data, pd.DataFrame) or isinstance(data, pd.Series)):
+            data = pd.DataFrame(data, dtype=np.float64)
         self.data = data
         self.sample_rate = None
 
